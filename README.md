@@ -1,5 +1,3 @@
-sniff(filter="ip dst 192.168.1.100", prn=packet_callback)
-
 # RouterHFT: High-Frequency Trading Router Latency Optimization Platform
 
 RouterHFT is a comprehensive research platform for high-frequency trading (HFT) router latency optimization, combining advanced networking analysis, hardware acceleration, and regulatory compliance.
