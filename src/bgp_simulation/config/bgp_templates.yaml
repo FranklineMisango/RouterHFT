@@ -1,0 +1,183 @@
+# BGP Configuration Templates for HFT Router Simulation
+
+# BIRD Configuration Template
+bird_template: |
+  # BIRD Configuration for HFT Router Simulation
+  log syslog all;
+  router id {{ router_id }};
+  
+  define OWNAS = {{ as_number }};
+  
+  protocol device {
+      scan time 10;
+  }
+  
+  protocol direct {
+      ipv4;
+      interface "*";
+  }
+  
+  protocol kernel {
+      ipv4 {
+          import none;
+          export all;
+      };
+  }
+  
+  protocol static {
+      ipv4;
+      {% for network in networks %}
+      route {{ network }} blackhole;
+      {% endfor %}
+  }
+  
+  {% for neighbor in neighbors %}
+  protocol bgp {{ neighbor.name }} {
+      local as OWNAS;
+      neighbor {{ neighbor.ip }} as {{ neighbor.as_number }};
+      
+      ipv4 {
+          import filter {
+              if bgp_path.len > 10 then reject;
+              accept;
+          };
+          
+          export filter {
+              if source = RTS_STATIC then accept;
+              reject;
+          };
+      };
+      
+      connect retry time 5;
+      hold time 240;
+      keepalive time 80;
+      startup hold time 240;
+      enable route refresh on;
+      graceful restart on;
+      graceful restart time 120;
+  }
+  {% endfor %}
+
+# Quagga/FRR Configuration Template
+quagga_template: |
+  !
+  ! Quagga/FRR Configuration for HFT Router Simulation
+  !
+  hostname hft-router-sim
+  password zebra
+  enable password zebra
+  !
+  router bgp {{ as_number }}
+   bgp router-id {{ router_id }}
+   bgp log-neighbor-changes
+   
+   {% for network in networks %}
+   network {{ network }}
+   {% endfor %}
+   
+   {% for neighbor in neighbors %}
+   neighbor {{ neighbor.ip }} remote-as {{ neighbor.as_number }}
+   neighbor {{ neighbor.ip }} description {{ neighbor.name }}
+   neighbor {{ neighbor.ip }} timers 10 30
+   neighbor {{ neighbor.ip }} route-map HFT-OUT out
+   {% endfor %}
+  !
+  route-map HFT-OUT permit 10
+   set metric 100
+  !
+  line vty
+  !
+  end
+
+# Simulation Scenarios
+scenarios:
+  financial_exchange:
+    description: "Simulation of BGP routing between financial exchanges"
+    router_id: "10.1.1.1"
+    as_number: 65001
+    networks:
+      - "10.1.0.0/16"
+      - "172.16.1.0/24"
+    neighbors:
+      - name: "nyse_peer"
+        ip: "10.1.1.2"
+        as_number: 65002
+        description: "NYSE Exchange Peer"
+      - name: "nasdaq_peer"
+        ip: "10.1.1.3"
+        as_number: 65003
+        description: "NASDAQ Exchange Peer"
+      - name: "cme_peer"
+        ip: "10.1.1.4"
+        as_number: 65004
+        description: "CME Exchange Peer"
+
+  microwave_backup:
+    description: "Simulation with microwave backup paths"
+    router_id: "10.2.1.1"
+    as_number: 65010
+    networks:
+      - "10.2.0.0/16"
+    neighbors:
+      - name: "primary_fiber"
+        ip: "10.2.1.2"
+        as_number: 65020
+        description: "Primary Fiber Connection"
+      - name: "backup_microwave"
+        ip: "10.2.1.3"
+        as_number: 65021
+        description: "Backup Microwave Link"
+
+  multi_path:
+    description: "Multi-path routing scenario for load balancing"
+    router_id: "10.3.1.1"
+    as_number: 65030
+    networks:
+      - "10.3.0.0/16"
+    neighbors:
+      - name: "path_1"
+        ip: "10.3.1.2"
+        as_number: 65031
+        description: "Primary Path"
+      - name: "path_2"
+        ip: "10.3.1.3"
+        as_number: 65032
+        description: "Secondary Path"
+      - name: "path_3"
+        ip: "10.3.1.4"
+        as_number: 65033
+        description: "Tertiary Path"
+
+# BGP Timer Configurations for HFT Optimization
+hft_timers:
+  aggressive:
+    description: "Aggressive timers for fastest convergence"
+    keepalive: 10
+    hold_time: 30
+    connect_retry: 5
+    
+  balanced:
+    description: "Balanced timers for good performance"
+    keepalive: 30
+    hold_time: 90
+    connect_retry: 10
+    
+  conservative:
+    description: "Conservative timers for stability"
+    keepalive: 60
+    hold_time: 180
+    connect_retry: 30
+
+# Route Filtering Policies
+route_policies:
+  hft_inbound:
+    description: "Inbound route filtering for HFT"
+    max_as_path_length: 5
+    reject_private_as: true
+    accept_default_route: false
+    
+  hft_outbound:
+    description: "Outbound route filtering for HFT"
+    announce_networks_only: true
+    set_med: 100
+    set_local_pref: 150
