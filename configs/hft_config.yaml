@@ -1,0 +1,131 @@
+# HFT Router Configuration
+
+# Logging Configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  handlers:
+    - type: file
+      filename: hft_router.log
+      max_bytes: 10485760  # 10MB
+      backup_count: 5
+    - type: console
+
+# Network Configuration
+network:
+  interfaces:
+    primary: eth0
+    backup: eth1
+  ptp:
+    master_ip: null  # Set to PTP master IP if available
+    domain: 0
+    sync_interval: 1  # seconds
+  
+# Latency Mapping Configuration
+latency_mapping:
+  max_hops: 30
+  timeout_seconds: 5
+  parallel_traces: 4
+  target_exchanges:
+    - name: "NYSE"
+      ip: "8.8.8.8"  # Example IP (replace with actual)
+      port: 1234
+      priority: 15
+    - name: "NASDAQ"
+      ip: "8.8.4.4"  # Example IP (replace with actual)
+      port: 5678
+      priority: 15
+    - name: "CME"
+      ip: "1.1.1.1"  # Example IP (replace with actual)
+      port: 9012
+      priority: 14
+
+# BGP Simulation Configuration
+bgp_simulation:
+  router_id: "192.168.1.1"
+  as_number: 65001
+  simulation_duration: 300  # seconds
+  scenarios:
+    - name: "baseline"
+      enabled: true
+    - name: "failover"
+      enabled: true
+    - name: "load_balancing"
+      enabled: false
+
+# FPGA Configuration
+fpga:
+  device_id: "0000:01:00.0"  # PCIe device ID
+  num_exchanges: 8
+  priority_levels: 16
+  buffer_size: 16
+  clock_frequency: 250000000  # 250 MHz
+  
+# Compliance Configuration
+compliance:
+  mode: "strict"  # strict, permissive, audit_only
+  log_all_operations: true
+  auto_reject_violations: true
+  rules:
+    cme_rule_575: true
+    finra_rule_6140: true
+    sec_regulation_ats: true
+  reporting:
+    enabled: true
+    interval: 3600  # seconds
+    format: "json"
+
+# Visualization Configuration
+visualization:
+  web_server:
+    host: "0.0.0.0"
+    port: 8080
+  map_center:
+    latitude: 40.7128
+    longitude: -74.0060
+  update_interval: 30  # seconds
+  max_points: 1000
+
+# Data Storage Configuration
+data:
+  base_directory: "./data"
+  retention_days: 30
+  compression: true
+  formats:
+    latency_data: "parquet"
+    route_data: "json"
+    compliance_logs: "json"
+
+# Performance Tuning
+performance:
+  thread_pool_size: 8
+  max_concurrent_traces: 10
+  cache_size: 1000
+  batch_size: 100
+  
+# Security Configuration
+security:
+  encryption:
+    enabled: true
+    algorithm: "AES-256-GCM"
+  authentication:
+    required: false  # Set to true for production
+    method: "token"
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 100
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  metrics:
+    - "latency"
+    - "packet_count"
+    - "compliance_status"
+    - "system_health"
+  export:
+    prometheus: true
+    port: 8081
+  alerts:
+    high_latency_threshold: 10000  # microseconds
+    compliance_violation: true
