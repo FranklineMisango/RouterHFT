@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  hft-router-main:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: hft-router-main
+    volumes:
+      - ../data:/app/data
+      - ../configs:/app/configs
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - HFT_LOG_LEVEL=INFO
+      - HFT_COMPLIANCE_MODE=strict
+      - HFT_PTP_MASTER=192.168.1.100
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    networks:
+      - hft-network
+    restart: unless-stopped
+    
+  hft-visualization:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: hft-visualization
+    command: ["python", "-m", "src.latency_mapping.geo_visualizer"]
+    volumes:
+      - ../data:/app/data
+      - ../configs:/app/configs
+    environment:
+      - HFT_LOG_LEVEL=INFO
+      - HFT_VIZ_PORT=8082
+    ports:
+      - "8082:8082"
+    networks:
+      - hft-network
+    depends_on:
+      - hft-router-main
+    restart: unless-stopped
+
+  hft-bgp-simulator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: hft-bgp-simulator
+    command: ["python", "-m", "src.bgp_simulation.routing_sim"]
+    volumes:
+      - ../data:/app/data
+      - ../configs:/app/configs
+    environment:
+      - HFT_LOG_LEVEL=INFO
+      - HFT_BGP_MODE=simulation
+    networks:
+      - hft-network
+    depends_on:
+      - hft-router-main
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+  hft-monitoring:
+    image: grafana/grafana:latest
+    container_name: hft-monitoring
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=hft_monitor_2024
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    networks:
+      - hft-network
+    restart: unless-stopped
+
+  hft-timesync:
+    image: chronyd:latest
+    container_name: hft-timesync
+    privileged: true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - CHRONY_CONF=/etc/chrony/chrony.conf
+    networks:
+      - hft-network
+    restart: unless-stopped
+
+networks:
+  hft-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  grafana-storage:
