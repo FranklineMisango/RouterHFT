@@ -154,7 +154,7 @@ PRESETS: Dict[str, SimParams] = {
 
 
 # ---------------------------------------------------------------------------
-# Analysis helpers
+# Analysis helper files
 # ---------------------------------------------------------------------------
 @dataclass
 class Analysis:
