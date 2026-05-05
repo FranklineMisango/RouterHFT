@@ -1,5 +1,0 @@
-2026-05-05 12:48:14,146 - src.common.compliance - WARNING - Compliance violation: CME Rule 575 - Market manipulation practices are prohibited
-2026-05-05 12:48:14,146 - src.common.compliance - WARNING - Compliance violation: Ethical Boundaries - Operations must be for research purposes only
-2026-05-05 12:48:14,146 - src.latency_mapping.ptp_timestamp - INFO - PTP synchronization started
-2026-05-05 12:48:14,146 - src.latency_mapping.ptp_timestamp - INFO - Time synchronization established
-2026-05-05 12:48:15,147 - src.latency_mapping.ptp_timestamp - INFO - PTP synchronization stopped

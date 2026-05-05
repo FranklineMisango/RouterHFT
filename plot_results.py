@@ -11,7 +11,7 @@ import pandas as pd
 def plot_latency(latency_csv: Path, output_png: Path) -> None:
     df = pd.read_csv(latency_csv)
     if df.empty:
-    raise ValueError(f"No rows found in {latency_csv}")
+        raise ValueError(f"No rows found in {latency_csv}")
 
     plt.figure(figsize=(10, 6))
     plt.hist(df["latency_ns"], bins=60, edgecolor="black", alpha=0.8, color="#0f766e")
@@ -27,7 +27,7 @@ def plot_latency(latency_csv: Path, output_png: Path) -> None:
 def plot_throughput(throughput_csv: Path, output_png: Path) -> None:
     df = pd.read_csv(throughput_csv)
     if df.empty:
-    raise ValueError(f"No rows found in {throughput_csv}")
+        raise ValueError(f"No rows found in {throughput_csv}")
 
     fig, ax1 = plt.subplots(figsize=(10, 6))
 
