@@ -1,44 +1,28 @@
 #!/usr/bin/env bash
 # build_ns3_examples.sh
-# Quick build script for NS-3 HFT examples
-# Usage: ./build_ns3_examples.sh
+# Configure and build NS-3.47 with examples/tests enabled.
+# Usage: ./build_ns3_examples.sh [/absolute/path/to/ns-3.47/build]
 
 set -euo pipefail
 
-NS3_ROOT="${NS3_ROOT:-$HOME/ns-3.47}"
-ROUTERHFT_DIR="$(cd "$(dirname "$0")" && pwd)"
+NS3_BUILD_DIR="${1:-${NS3_BUILD_DIR:-$HOME/ns-3.47/build}}"
+NS3_ROOT="$(cd "$NS3_BUILD_DIR/.." && pwd)"
 
-if [ ! -d "$NS3_ROOT" ]; then
-  echo "Error: NS3_ROOT=$NS3_ROOT not found" >&2
-  echo "Set NS3_ROOT environment variable to your ns-3 installation" >&2
+if [ ! -d "$NS3_ROOT" ] || [ ! -f "$NS3_ROOT/CMakeLists.txt" ]; then
+  echo "Error: NS-3 root not found from build dir: $NS3_BUILD_DIR" >&2
+  echo "Usage: $0 /absolute/path/to/ns-3.47/build" >&2
   exit 1
 fi
 
 echo "=== RouterHFT NS-3 Build ==="
 echo "NS-3 Root: $NS3_ROOT"
-echo "RouterHFT Dir: $ROUTERHFT_DIR"
+echo "NS-3 Build Dir: $NS3_BUILD_DIR"
 
-# Copy example to NS-3 scratch
-echo "Copying example to NS-3..."
-mkdir -p "$NS3_ROOT/scratch"
-cp "$ROUTERHFT_DIR/examples/hft-nic-pipeline.cc" "$NS3_ROOT/scratch/" || true
+mkdir -p "$NS3_BUILD_DIR"
+pushd "$NS3_BUILD_DIR" >/dev/null
+cmake .. -GNinja -DNS3_EXAMPLES=ON -DNS3_TESTS=ON
+ninja
+popd >/dev/null
 
-# Build NS-3
-echo "Building NS-3..."
-cd "$NS3_ROOT"
-if [ ! -f wscript ]; then
-  echo "Error: not in NS-3 root" >&2
-  exit 1
-fi
-
-./waf clean >/dev/null 2>&1 || true
-./waf configure --enable-examples --quiet
-./waf build --quiet
-
-echo "✓ NS-3 built successfully"
-
-# Run example
-echo "Running HFT NIC pipeline example..."
-./waf --run "scratch/hft-nic-pipeline" --command-template="%s"
-
-echo "✓ Example completed"
+echo "✓ NS-3 configured and built"
+echo "Next: ./scripts/run_nic_router_hybrid.sh $NS3_BUILD_DIR"
