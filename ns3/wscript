@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# wscript for RouterHFT NS-3 module
+# Place this in ns-3/src/routerhft/wscript
+
+def build(bld):
+    obj = bld.create_ns3_module('routerhft', ['internet', 'applications'])
+    obj.source = [
+        'model/udp-feed-handler.cc',
+        'model/timestamp-header.cc',
+    ]
+    
+    headers = bld(features='ns3header')
+    headers.module = 'routerhft'
+    headers.source = [
+        'model/udp-feed-handler.h',
+        'model/timestamp-header.h',
+    ]
+    
+    if bld.env.ENABLE_EXAMPLES:
+        bld.recurse('examples')
+
+def configure(conf):
+    conf.report_optional_feature('routerhft', 'RouterHFT HFT Simulation Module',
+                                  True, 'Required modules available')
+
+def distclean(ctx):
+    pass
