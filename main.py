@@ -158,6 +158,14 @@ PRESETS: Dict[str, SimParams] = {
         inter_packet_gap_us=1,  # 1M pps
         sim_stop_seconds=12.0,
     ),
+    "ultra-hft": SimParams(
+        link_rate="400Gbps",  # modern high-speed networking
+        link_delay="0.5us",   # sub-microsecond co-location (realistic)
+        packet_count=5000000,  # 5M packets (manageable)
+        packet_size=64,       # small packets for max message rate
+        inter_packet_gap_us=1.0,  # 1M pps (achievable)
+        sim_stop_seconds=10.0,
+    ),
 }
 
 
@@ -200,7 +208,7 @@ class Analysis:
             lines.append(f"    Seconds with data: {ts['entries']}")
             lines.append(f"    Peak pps:          {ts['peak_pps']:>10.0f}")
             lines.append(f"    Avg pps:           {ts['avg_pps']:>10.0f}")
-            lines.append(f"    Total packets rx:  {ts['total_packets']:>10.0f}")
+            lines.append(f"    Total bytes rx:    {ts['total_bytes']:>10.0f}")
         else:
             lines.append("    (no data)")
 
@@ -253,7 +261,7 @@ def analyze_throughput(csv_path: Path) -> Optional[dict]:
         "entries": len(rows),
         "peak_pps": max(pps_vals),
         "avg_pps": sum(pps_vals) / len(pps_vals),
-        "total_packets": total_rx,
+        "total_bytes": total_rx,
     }
 
 
@@ -387,6 +395,7 @@ def list_presets():
         "congestion-stress": "1Gbps bottleneck with rapid large packets",
         "burst": "MTU-sized 5K packets at 1M pps microburst",
         "hft-co-lo": "100Gbps co-location 1us delay at 1M pps",
+        "ultra-hft": "400Gbps sub-μs co-location at 10M pps — Optiver/HRT level",
     }
     for name, p in PRESETS.items():
         print(f"  {name:<20} {descriptions.get(name, '')}")
@@ -397,7 +406,7 @@ def list_presets():
 def interactive_menu() -> SimParams:
     print(textwrap.dedent("""\
     ╔══════════════════════════════════════════════════════════════╗
-    ║          RouterHFT Simulation Parameter Tuner                ║
+    ║          RouterHFT Configuration Pipeline                    ║
     ╚══════════════════════════════════════════════════════════════╝
     """))
 
@@ -589,7 +598,7 @@ def benchmark_mode(presets: List[str], ns3_root: Optional[Path] = None):
     print("\n" + "=" * 70)
     print("  COMPARISON TABLE")
     print("=" * 70)
-    header = f"{'Preset':<20} {'Mean Lat':>10} {'P99 Lat':>10} {'Jitter':>10} {'Peak PPS':>10} {'Total Rx':>10}"
+    header = f"{'Preset':<20} {'Mean Lat':>10} {'P99 Lat':>10} {'Jitter':>10} {'Peak PPS':>10} {'Total Bytes':>12}"
     print(header)
     print("-" * 70)
     for r in results:
@@ -599,7 +608,7 @@ def benchmark_mode(presets: List[str], ns3_root: Optional[Path] = None):
         p99_lat = f"{ls.get('p99', 0):>9.0f}ns" if ls else "N/A"
         jitter = f"{ls.get('jitter_ns', 0):>9.0f}ns" if ls else "N/A"
         peak = f"{ts.get('peak_pps', 0):>10.0f}" if ts else "N/A"
-        total = f"{ts.get('total_packets', 0):>10.0f}" if ts else "N/A"
+        total = f"{ts.get('total_bytes', 0):>12.0f}" if ts else "N/A"
         print(f"{r.name:<20} {mean_lat:>10} {p99_lat:>10} {jitter:>10} {peak:>10} {total:>10}")
 
 
