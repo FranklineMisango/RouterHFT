@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-Quick demo script for HFT Router Optimization system.
+Optional legacy helper for HFT Router Optimization charts/visualization.
+
+Primary testing for this repo is C++-first; use tests/cpp/hft_smoke_test.cpp
+for the main verification path.
 """
 
 import asyncio
@@ -17,7 +20,7 @@ from src.latency_mapping.ptp_timestamp import TimeSyncManager, HighPrecisionTime
 
 async def demo_timestamp_precision():
     """Demo high-precision timestamp functionality."""
-    print("🕐 Testing High-Precision Timestamps")
+    print("Testing High-Precision Timestamps")
     print("=" * 50)
     
     # Basic timestamp
@@ -36,7 +39,7 @@ async def demo_timestamp_precision():
 
 def demo_compliance_framework():
     """Demo compliance framework functionality."""
-    print("🛡️  Testing Compliance Framework")
+    print("Testing Compliance Framework")
     print("=" * 50)
     
     compliance = ComplianceFramework()
@@ -79,7 +82,7 @@ def demo_compliance_framework():
 
 async def demo_time_synchronization():
     """Demo time synchronization functionality."""
-    print("⏰ Testing Time Synchronization")
+    print("Testing Time Synchronization")
     print("=" * 50)
     
     time_mgr = TimeSyncManager()
@@ -113,7 +116,7 @@ async def demo_time_synchronization():
 
 async def demo_network_validation():
     """Demo network utilities."""
-    print("🌐 Testing Network Utilities")
+    print("Testing Network Utilities")
     print("=" * 50)
     
     from src.common.utils import NetworkUtils
@@ -144,7 +147,7 @@ async def demo_network_validation():
 
 async def main():
     """Main demo function."""
-    print("🚀 HFT Router Optimization System Demo")
+    print("HFT Router Optimization System Demo")
     print("=" * 60)
     print()
     
@@ -158,7 +161,7 @@ async def main():
         await demo_time_synchronization()
         await demo_network_validation()
         
-        print("✅ All demos completed successfully!")
+        print("All demos completed successfully!")
         print()
         print("Next steps:")
         print("1. Configure target exchanges in configs/hft_config.yaml")

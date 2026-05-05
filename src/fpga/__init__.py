@@ -1,1 +1,0 @@
-# FPGA hardware acceleration modules

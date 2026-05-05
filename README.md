@@ -22,7 +22,7 @@
 
 RouterHFT is a dual-purpose platform:
 
-1. **Core System** (Python/FPGA): High-frequency trading router with nanosecond-precision timing, regulatory compliance, and latency mapping.
+1. **Core System** (C++/FPGA, with optional Python utilities): High-frequency trading router with nanosecond-precision timing, regulatory compliance, and latency mapping.
 2. **Network Simulation Stack** (C++/NS-3/OMNeT++): Complete layers for NIC, router, and application-level HFT simulation with packet-level analysis.
 
 This repo showcases progression from **basic networking labs** → **hybrid emulation** → **systems-level simulation** → **programmable NIC design** → **production-ready documentation**.
@@ -33,7 +33,7 @@ This repo showcases progression from **basic networking labs** → **hybrid emul
 
 ```
 RouterHFT/
-├── src/                    # Core HFT system (Python)
+├── src/                    # Core HFT system (C++/FPGA; Python only for optional utilities/charts)
 │   ├── common/             # Utilities & compliance
 │   ├── latency_mapping/    # Network analysis
 │   ├── fpga/               # Verilog acceleration
@@ -84,7 +84,7 @@ RouterHFT/
 │   ├── Dockerfile
 │   └── docker-compose.yml
 │
-├── tests/                  # Test suite (Python + unit tests)
+├── tests/                  # C++ smoke tests + existing unit tests
 │   └── test_core_functionality.py
 │
 ├── scripts/                # Build & run helpers
@@ -93,7 +93,7 @@ RouterHFT/
 │
 ├── INTEGRATION.md          # Full hybrid stack guide
 ├── README.md               # This file
-└── requirements.txt        # Python dependencies
+└── requirements.txt        # Optional Python dependencies for charts/visualization
 ```
 
 ---
@@ -265,10 +265,11 @@ make
 ### **Option D: Run Core HFT System**
 
 ```bash
-python demo.py                    # Quick demo
-python -m pytest tests/ -v        # Full test suite
-python -m src.main                # Main system
+g++ -std=c++17 -pthread tests/cpp/hft_smoke_test.cpp -o hft_smoke_test
+./hft_smoke_test                  # Preferred C++ verification path
 ```
+
+Python is kept only for optional visualization/charting helpers and legacy scripts; the primary test path is C++.
 
 ---
 
@@ -280,7 +281,7 @@ python -m src.main                # Main system
 cd /home/misango/codechest/RouterHFT
 
 # Python dependencies
-pip install -r requirements.txt
+pip install -r requirements.txt  # Optional: charts/visualization only
 
 # NS-3 (if not already installed)
 cd ~/ns-3.47 && ./waf configure && ./waf build
@@ -302,7 +303,20 @@ g++ -std=c++17 -pthread test_nic_components.cc -o test_nic
 - Timestamp precision (64-bit nanoseconds)
 - Thread safety (producer-consumer pattern)
 
-### **3. Build NS-3 Module**
+### **3. Build C++ Smoke Test**
+
+```bash
+g++ -std=c++17 -pthread tests/cpp/hft_smoke_test.cpp -o hft_smoke_test
+./hft_smoke_test
+```
+
+**Validates:**
+- Nanosecond timing behavior
+- IP validation
+- Simple compliance rule checks
+- Latency arithmetic
+
+### **4. Build NS-3 Module**
 
 ```bash
 # Option 1: Quick (copy example to scratch)
@@ -317,7 +331,7 @@ cp ns3/wscript ~/ns-3.47/src/routerhft/
 cd ~/ns-3.47 && ./waf clean && ./waf configure && ./waf build
 ```
 
-### **4. Build OMNeT++ Simulation**
+### **5. Build OMNeT++ Simulation**
 
 ```bash
 cd omnet
@@ -328,7 +342,7 @@ make
 ./HFT_NIC_Network -u Cmdenv  # Run with command-line UI
 ```
 
-### **5. Docker Deployment (Optional)**
+### **6. Docker Deployment (Optional)**
 
 ```bash
 cd docker
@@ -475,7 +489,7 @@ docker-compose up -d
 ```
 - Total Lines of Code: ~3000+ (core + simulation)
 - C++ Modules: 12 (NIC, NS-3, OMNeT++)
-- Python Scripts: 15+
+- Python Scripts: Optional helpers only
 - Configuration Files: 20+
 - Documentation: 5 comprehensive guides
 - Test Coverage: 95% (core), 100% (NIC components)
