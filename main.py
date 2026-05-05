@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-RouterHFT Simulation Runner & Parameter Tuner
+RouterHFT Simulation Runner & Parameter Tuner with Integrated Plotting
 
 Interactive script to run NS-3 simulations with custom parameters,
-collect results, and visualize them.
+collect results, analyze them, and generate plots.
 
 Usage:
-  python3 run_simulation.py                          # Interactive mode
-  python3 run_simulation.py --preset benchmark       # Use a preset
-  python3 run_simulation.py --list-presets           # List available presets
+  python3 combined_simulation.py                          # Interactive mode
+  python3 combined_simulation.py --preset benchmark       # Use a preset
+  python3 combined_simulation.py --list-presets           # List available presets
 """
 
 import argparse
@@ -23,6 +23,14 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+# Plotting imports
+try:
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    PLOTTING_AVAILABLE = True
+except ImportError:
+    PLOTTING_AVAILABLE = False
 
 # ---------------------------------------------------------------------------
 # Project paths
@@ -250,6 +258,54 @@ def analyze_throughput(csv_path: Path) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Plotting functions (integrated from plot_results.py)
+# ---------------------------------------------------------------------------
+def plot_latency(latency_csv: Path, output_png: Path) -> None:
+    if not PLOTTING_AVAILABLE:
+        print("  Plotting libraries not available (matplotlib/pandas). Skipping plots.")
+        return
+    df = pd.read_csv(latency_csv)
+    if df.empty:
+        raise ValueError(f"No rows found in {latency_csv}")
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(df["latency_ns"], bins=60, edgecolor="black", alpha=0.8, color="#0f766e")
+    plt.title("End-to-End Latency Distribution (NIC -> Router -> Consumer)")
+    plt.xlabel("Latency (ns)")
+    plt.ylabel("Packet Count")
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_png)
+    plt.close()
+
+
+def plot_throughput(throughput_csv: Path, output_png: Path) -> None:
+    if not PLOTTING_AVAILABLE:
+        return
+    df = pd.read_csv(throughput_csv)
+    if df.empty:
+        raise ValueError(f"No rows found in {throughput_csv}")
+
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    ax1.plot(df["second"], df["packets_per_second"], marker="o", color="#1d4ed8", label="Packets/s")
+    ax1.set_xlabel("Second")
+    ax1.set_ylabel("Packets/s", color="#1d4ed8")
+    ax1.tick_params(axis="y", labelcolor="#1d4ed8")
+
+    ax2 = ax1.twinx()
+    ax2.plot(df["second"], df["bits_per_second"], marker="s", color="#dc2626", label="Bits/s")
+    ax2.set_ylabel("Bits/s", color="#dc2626")
+    ax2.tick_params(axis="y", labelcolor="#dc2626")
+
+    ax1.grid(alpha=0.25)
+    fig.suptitle("Pipeline Throughput Over Time")
+    fig.tight_layout()
+    fig.savefig(output_png)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
 # NS-3 runner
 # ---------------------------------------------------------------------------
 def find_ns3_root() -> Optional[Path]:
@@ -434,32 +490,24 @@ def prompt_float(label: str, lo: float, hi: float, default: float) -> float:
 # Visualization
 # ---------------------------------------------------------------------------
 def generate_plots():
-    """Run plot_results.py if matplotlib/pandas are available."""
-    plot_script = ROOT / "plot_results.py"
-    if not plot_script.exists():
-        print("  Plot script not found, skipping visualization.")
-        return
+    """Generate plots directly using integrated functions."""
     latency_csv = RESULTS_DIR / "latency.csv"
     throughput_csv = RESULTS_DIR / "throughput.csv"
     if not latency_csv.exists() and not throughput_csv.exists():
         print("  No result CSV files found, skipping visualization.")
         return
     print("  Generating plots...")
-    result = subprocess.run(
-        [sys.executable, str(plot_script),
-         str(latency_csv), str(throughput_csv),
-         "--output-dir", str(RESULTS_DIR)],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    if result.returncode == 0:
-        print(f"  Plots saved to {RESULTS_DIR}/")
-        if result.stdout.strip():
-            for line in result.stdout.strip().split("\n"):
-                print(f"    {line}")
-    else:
-        print(f"  Plotting failed (may need matplotlib):\n{result.stderr[-500:]}")
+    try:
+        if latency_csv.exists():
+            latency_png = RESULTS_DIR / "latency_histogram.png"
+            plot_latency(latency_csv, latency_png)
+            print(f"  Saved {latency_png}")
+        if throughput_csv.exists():
+            throughput_png = RESULTS_DIR / "throughput_timeseries.png"
+            plot_throughput(throughput_csv, throughput_png)
+            print(f"  Saved {throughput_png}")
+    except Exception as e:
+        print(f"  Plotting failed: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -560,15 +608,15 @@ def benchmark_mode(presets: List[str], ns3_root: Optional[Path] = None):
 # ---------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(
-        description="RouterHFT Simulation Runner & Parameter Tuner",
+        description="RouterHFT Simulation Runner & Parameter Tuner with Integrated Plotting",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""\
             Examples:
-              python3 run_simulation.py                         # Interactive
-              python3 run_simulation.py --preset baseline        # Run a single preset
-              python3 run_simulation.py --preset baseline,hft-co-lo  # Run multiple
-              python3 run_simulation.py --list-presets           # List presets
-              python3 run_simulation.py --link-rate 40Gbps --packet-count 100000  # Quick custom
+              python3 combined_simulation.py                         # Interactive
+              python3 combined_simulation.py --preset baseline        # Run a single preset
+              python3 combined_simulation.py --preset baseline,hft-co-lo  # Run multiple
+              python3 combined_simulation.py --list-presets           # List presets
+              python3 combined_simulation.py --link-rate 40Gbps --packet-count 100000  # Quick custom
         """),
     )
     parser.add_argument("--preset", help="Preset name(s), comma-separated for benchmark mode")
@@ -623,7 +671,6 @@ def main():
         generate_plots()
 
     print(f"\n  Results saved to: {RESULTS_DIR}/")
-    print(f"  Plot script: python3 {ROOT}/plot_results.py {RESULTS_DIR}/latency.csv {RESULTS_DIR}/throughput.csv")
 
 
 def apply_cli_overrides(params: SimParams, args) -> SimParams:
